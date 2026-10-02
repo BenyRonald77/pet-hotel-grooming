@@ -3,6 +3,9 @@
 export const UKURAN = ["S", "M", "L"] as const;
 export type Ukuran = (typeof UKURAN)[number];
 
+// Pilihan nafsu makan pada laporan harian.
+export const NAFSU_MAKAN = ["lahap", "sedang", "kurang"] as const;
+
 // Status booking yang masih menempati kapasitas kandang.
 export const STATUS_AKTIF = ["dipesan", "check-in"];
 
