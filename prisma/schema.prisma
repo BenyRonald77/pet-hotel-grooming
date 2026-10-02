@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Kandang fisik. Kapasitas dijaga PER UKURAN PER TANGGAL:
+// total kapasitas semua kandang berukuran X vs jumlah booking aktif ukuran X.
+model Kandang {
+  id            Int       @id @default(autoincrement())
+  kode          String    @unique
+  ukuran        String // S | M | L
+  kapasitas     Int // jumlah hewan yang muat
+  tarifPerMalam Int
+  aktif         Boolean   @default(true)
+  bookings      Booking[]
+}
+
+// Hewan peliharaan + data pemilik.
+model Hewan {
+  id            Int              @id @default(autoincrement())
+  nama          String
+  jenis         String
+  ukuran        String // S | M | L — harus cocok dengan ukuran kandang
+  namaPemilik   String
+  kontakPemilik String
+  vaksinasi     Vaksin[]
+  bookings      Booking[]
+  pengingat     PengingatVaksin[]
+}
+
+// Catatan vaksin per hewan; wajib ada yang masih berlaku saat check-in.
+model Vaksin {
+  id                 Int              @id @default(autoincrement())
+  hewanId            Int
+  hewan              Hewan            @relation(fields: [hewanId], references: [id], onDelete: Cascade)
+  jenisVaksin        String
+  tanggalVaksin      String // YYYY-MM-DD
+  tanggalKedaluwarsa String // YYYY-MM-DD
+  pengingat          PengingatVaksin[]
+}
+
+// Paket grooming sebagai add-on booking.
+model PaketGrooming {
+  id       Int       @id @default(autoincrement())
+  nama     String    @unique
+  deskripsi String   @default("")
+  harga    Int
+  aktif    Boolean   @default(true)
+  bookings Booking[]
+}
+
+// Status: dipesan -> check-in -> check-out -> selesai; bisa dibatalkan.
+model Booking {
+  id              Int             @id @default(autoincrement())
+  kode            String          @unique
+  hewanId         Int
+  hewan           Hewan           @relation(fields: [hewanId], references: [id])
+  kandangId       Int
+  kandang         Kandang         @relation(fields: [kandangId], references: [id])
+  tanggalCheckin  String // YYYY-MM-DD (inklusif)
+  tanggalCheckout String // YYYY-MM-DD (eksklusif — hari pulang)
+  grooming        Boolean         @default(false)
+  paketGroomingId Int?
+  paketGrooming   PaketGrooming?  @relation(fields: [paketGroomingId], references: [id])
+  status          String          @default("dipesan")
+  total           Int
+  catatan         String          @default("")
+  dibuatPada      String
+  laporan         LaporanHarian[]
+}
+
+// Pengingat vaksin: dibuat oleh job/scan untuk vaksin yang akan kedaluwarsa.
+model PengingatVaksin {
+  id          Int     @id @default(autoincrement())
+  hewanId     Int
+  hewan       Hewan   @relation(fields: [hewanId], references: [id], onDelete: Cascade)
+  vaksinId    Int
+  vaksin      Vaksin  @relation(fields: [vaksinId], references: [id], onDelete: Cascade)
+  tanggalKirim String // YYYY-MM-DD — tanggal pengingat dikirim/dijadwalkan
+  terkirim    Boolean @default(false)
+  dibuatPada  String
+
+  @@unique([vaksinId, tanggalKirim])
+}
+
+// Laporan harian per booking: makan + catatan + foto.
+model LaporanHarian {
+  id             Int     @id @default(autoincrement())
+  bookingId      Int
+  booking        Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tanggal        String // YYYY-MM-DD
+  porsiMakan     String
+  nafsuMakan     String // lahap | sedang | kurang
+  catatanUmum    String  @default("")
+  fotoNamaAsli   String?
+  fotoNamaSimpan String?
+  dibuatPada     String
+
+  @@unique([bookingId, tanggal])
+}
