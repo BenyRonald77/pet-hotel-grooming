@@ -13,7 +13,7 @@ type Row = {
 export default function BookingPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [hewan, setHewan] = useState<{ id: number; nama: string; ukuran: string }[]>([]);
-  const [kandang, setKandang] = useState<{ id: number; kode: string; ukuran: string }[]>([]);
+  const [kandang, setKandang] = useState<{ id: number; kode: string; ukuran: string; aktif: boolean }[]>([]);
   const [paket, setPaket] = useState<{ id: number; nama: string; harga: number }[]>([]);
   const [form, setForm] = useState({
     hewanId: "", kandangId: "", tanggalCheckin: "", tanggalCheckout: "",
